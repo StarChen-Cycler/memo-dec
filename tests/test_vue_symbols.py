@@ -357,6 +357,191 @@ const slotProps = ref({ data: 'test' })
             self.assertIn('type', symbol)
             self.assertIn('name', symbol)
 
+    def test_vue_script_setup_symbols_extracted(self):
+        """Test that script setup functions and variables are extracted"""
+        vue_content = '''<template>
+  <div>{{ userName }}</div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+
+const userName = ref('John')
+const userAge = ref(25)
+
+const userInfo = computed(() => {
+  return `${userName.value}`
+})
+
+function updateProfile() {
+  console.log('Updating')
+}
+
+const resetData = () => {
+  userName.value = ''
+}
+</script>
+'''
+        test_file = self.test_dir / "ScriptSetup.vue"
+        test_file.write_text(vue_content, encoding='utf-8')
+
+        symbols = extract_symbols(test_file)
+
+        # Check for script symbols
+        var_names = [s['name'] for s in symbols if s['type'] == 'variable']
+        func_names = [s['name'] for s in symbols if s['type'] == 'function']
+
+        # Variables from script setup
+        self.assertIn('userName', var_names)
+        self.assertIn('userAge', var_names)
+        self.assertIn('userInfo', var_names)
+        self.assertIn('resetData', var_names)
+
+        # Function from script setup
+        self.assertIn('updateProfile', func_names)
+
+        # Verify block attribute is set for script symbols
+        script_symbols = [s for s in symbols if s.get('block') == 'script']
+        self.assertGreater(len(script_symbols), 0)
+
+    def test_vue_options_api_methods_extracted(self):
+        """Test that Options API exports and top-level code are extracted"""
+        vue_content = '''<template>
+  <div>{{ count }}</div>
+</template>
+
+<script>
+import { ref } from 'vue'
+
+const initialValue = 0
+const maxCount = 100
+
+export default {
+  name: 'Counter',
+  data() {
+    return {
+      count: 0,
+      message: 'Hello'
+    }
+  },
+  computed: {
+    doubled() {
+      return this.count * 2
+    }
+  },
+  methods: {
+    increment() {
+      this.count++
+    },
+    decrement() {
+      this.count--
+    }
+  }
+}
+
+function helperFunction() {
+  return initialValue
+}
+</script>
+'''
+        test_file = self.test_dir / "OptionsApi.vue"
+        test_file.write_text(vue_content, encoding='utf-8')
+
+        symbols = extract_symbols(test_file)
+
+        # Check for top-level variables (before/after export)
+        var_names = [s['name'] for s in symbols if s['type'] == 'variable']
+        self.assertIn('initialValue', var_names)
+        self.assertIn('maxCount', var_names)
+
+        # Check for top-level functions (outside export default)
+        func_names = [s['name'] for s in symbols if s['type'] == 'function']
+        self.assertIn('helperFunction', func_names)
+
+        # Note: Methods inside export default object (data, doubled, increment)
+        # are not currently extracted as they require object method queries.
+        # This is a known limitation that could be enhanced with additional queries.
+
+    def test_vue_typescript_script(self):
+        """Test that TypeScript script blocks are parsed correctly"""
+        vue_content = '''<template>
+  <div>{{ user.name }}</div>
+</template>
+
+<script lang="ts">
+interface User {
+  name: string
+  age: number
+}
+
+const user: User = {
+  name: 'John',
+  age: 25
+}
+
+function greet(user: User): string {
+  return `Hello, ${user.name}`
+}
+
+class UserService {
+  getUser(): User {
+    return user
+  }
+}
+</script>
+'''
+        test_file = self.test_dir / "TypeScript.vue"
+        test_file.write_text(vue_content, encoding='utf-8')
+
+        symbols = extract_symbols(test_file)
+
+        # Check TypeScript symbols
+        var_names = [s['name'] for s in symbols if s['type'] == 'variable']
+        func_names = [s['name'] for s in symbols if s['type'] == 'function']
+        class_names = [s['name'] for s in symbols if s['type'] == 'class']
+
+        self.assertIn('user', var_names)
+        self.assertIn('greet', func_names)
+        self.assertIn('UserService', class_names)
+
+    def test_vue_line_numbers_correct(self):
+        """Test that line numbers are correctly mapped to original file"""
+        vue_content = '''<template>
+  <div>Line 2</div>
+</template>
+
+<script setup>
+const userName = ref('John')
+function updateProfile() {}
+</script>
+'''
+        test_file = self.test_dir / "LineNumbers.vue"
+        test_file.write_text(vue_content, encoding='utf-8')
+
+        symbols = extract_symbols(test_file)
+
+        # Verify file structure:
+        # Line 1: <template>
+        # Line 2:   <div>Line 2</div>
+        # Line 3: </template>
+        # Line 4: (empty)
+        # Line 5: <script setup>
+        # Line 6: const userName = ref('John')
+        # Line 7: function updateProfile() {}
+        # Line 8: </script>
+
+        # Find userName variable
+        user_name_sym = next((s for s in symbols if s['name'] == 'userName'), None)
+        self.assertIsNotNone(user_name_sym)
+        # userName is on line 6 in the original file
+        self.assertEqual(user_name_sym['line'], 6)
+
+        # Find updateProfile function
+        update_sym = next((s for s in symbols if s['name'] == 'updateProfile'), None)
+        self.assertIsNotNone(update_sym)
+        # updateProfile is on line 7 in the original file
+        self.assertEqual(update_sym['line'], 7)
+
 
 if __name__ == '__main__':
     unittest.main()

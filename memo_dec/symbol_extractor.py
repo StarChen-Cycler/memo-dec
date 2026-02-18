@@ -387,6 +387,170 @@ def extract_symbols_from_notebook(file_path):
         return []
 
 
+def extract_symbols_from_vue(file_path):
+    """
+    Extract symbols from a Vue Single-File Component (.vue) file.
+
+    Parses <script> and <template> blocks separately with appropriate parsers.
+    Supports:
+    - <script setup> (Composition API)
+    - <script> (Options API)
+    - <script lang="ts"> (TypeScript)
+    - <template> (HTML)
+
+    Args:
+        file_path (Path): Path to .vue file
+
+    Returns:
+        list: List of symbol dictionaries with keys: file, line, type, name
+    """
+    import re
+
+    if not TREE_SITTER_AVAILABLE:
+        return []
+
+    try:
+        content = file_path.read_text(encoding='utf-8')
+        results = []
+
+        # === Extract and parse <script> block(s) ===
+        # Match <script>, <script setup>, <script lang="ts">, etc.
+        script_pattern = r'<script\b[^>]*?(?:\s+lang\s*=\s*["\'](\w+)["\'])?[^>]*>(.*?)</script>'
+        script_matches = list(re.finditer(script_pattern, content, re.DOTALL | re.IGNORECASE))
+
+        for match in script_matches:
+            lang_attr = match.group(1)  # Language attribute (e.g., 'ts', 'tsx')
+            script_content = match.group(2)  # Script content
+
+            if not script_content.strip():
+                continue
+
+            # Calculate line offset for this script block
+            text_before = content[:match.start()]
+            line_offset = text_before.count('\n')
+
+            # Determine which parser to use
+            if lang_attr and lang_attr.lower() in ('ts', 'typescript'):
+                lang_func = ts_language
+                lang_key = 'typescript'
+            else:
+                # Default to JavaScript for <script> blocks
+                lang_func = js_language
+                lang_key = 'javascript'
+
+            try:
+                lang = Language(lang_func())
+                parser = Parser(lang)
+                code_bytes = script_content.encode('utf-8')
+                tree = parser.parse(code_bytes)
+
+                if lang_key in QUERIES:
+                    for symbol_type, query_str in QUERIES[lang_key].items():
+                        try:
+                            query = Query(lang, query_str)
+                            cursor = QueryCursor(query)
+
+                            for m in cursor.matches(tree.root_node):
+                                capture_dict = m[1]
+                                capture_names = list(capture_dict.keys())
+                                if not capture_names:
+                                    continue
+
+                                capture_name = capture_names[0]
+                                if not capture_dict[capture_name]:
+                                    continue
+
+                                node = capture_dict[capture_name][0]
+
+                                # Extract name
+                                if node.type == 'identifier':
+                                    name = code_bytes[node.start_byte:node.end_byte].decode('utf-8')
+                                else:
+                                    name = code_bytes[node.start_byte:node.end_byte].decode('utf-8')
+
+                                if name:
+                                    # Calculate actual line number in original file
+                                    # Formula: line_offset + node.start_point[0] + 1
+                                    # - line_offset = newlines before <script> tag (0-indexed line of <script>)
+                                    # - node.start_point[0] = 0-indexed line within script content
+                                    # - +1 to convert to 1-indexed line number
+                                    actual_line = line_offset + node.start_point[0] + 1
+
+                                    results.append({
+                                        'file': str(file_path),
+                                        'line': actual_line,
+                                        'type': symbol_type,
+                                        'name': name,
+                                        'block': 'script'
+                                    })
+                        except Exception:
+                            continue
+            except Exception:
+                continue
+
+        # === Extract and parse <template> block ===
+        template_pattern = r'<template\b[^>]*>(.*?)</template>'
+        template_match = re.search(template_pattern, content, re.DOTALL | re.IGNORECASE)
+
+        if template_match:
+            template_content = template_match.group(1)
+            text_before = content[:template_match.start()]
+            line_offset = text_before.count('\n')
+
+            if template_content.strip():
+                try:
+                    lang = Language(html_language())
+                    parser = Parser(lang)
+                    code_bytes = template_content.encode('utf-8')
+                    tree = parser.parse(code_bytes)
+
+                    # Use HTML queries for template
+                    for symbol_type, query_str in QUERIES['html'].items():
+                        try:
+                            query = Query(lang, query_str)
+                            cursor = QueryCursor(query)
+
+                            for m in cursor.matches(tree.root_node):
+                                capture_dict = m[1]
+                                capture_names = list(capture_dict.keys())
+                                if not capture_names:
+                                    continue
+
+                                capture_name = capture_names[0]
+                                if not capture_dict[capture_name]:
+                                    continue
+
+                                node = capture_dict[capture_name][0]
+                                name = code_bytes[node.start_byte:node.end_byte].decode('utf-8')
+
+                                if name:
+                                    # Calculate actual line number in original file
+                                    # Formula: line_offset + node.start_point[0] + 1
+                                    # - line_offset = newlines before <template> tag (0-indexed line of <template>)
+                                    # - node.start_point[0] = 0-indexed line within template content
+                                    # - +1 to convert to 1-indexed line number
+                                    actual_line = line_offset + node.start_point[0] + 1
+
+                                    results.append({
+                                        'file': str(file_path),
+                                        'line': actual_line,
+                                        'type': symbol_type,
+                                        'name': name,
+                                        'block': 'template'
+                                    })
+                        except Exception:
+                            continue
+                except Exception:
+                    pass
+
+        # Sort by line number
+        results.sort(key=lambda x: x['line'])
+        return results
+
+    except Exception:
+        return []
+
+
 def should_ignore_path(path, ignore_patterns=None):
     """
     Check if a path should be ignored based on patterns.
@@ -514,6 +678,10 @@ def extract_symbols(file_path):
     # Special handling for Jupyter notebooks
     if ext == '.ipynb':
         return extract_symbols_from_notebook(file_path)
+
+    # Special handling for Vue Single-File Components
+    if ext == '.vue':
+        return extract_symbols_from_vue(file_path)
 
     if ext not in LANGUAGE_MAP:
         return []
