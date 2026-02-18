@@ -1,0 +1,8 @@
+14:fun:Greet
+21:fun:Speak
+32:fun:Method
+33:fun:localFunction
+5:cla:Person
+20:cla:ISpeaker
+25:cla:Point
+31:cla:Example

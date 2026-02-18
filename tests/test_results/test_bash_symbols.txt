@@ -1,0 +1,7 @@
+5:fun:greet
+10:fun:add_numbers
+21:fun:main
+11:var:a
+12:var:b
+17:var:CONFIG_FILE
+18:var:MAX_RETRIES

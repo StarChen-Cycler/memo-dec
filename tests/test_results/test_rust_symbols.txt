@@ -1,0 +1,7 @@
+3:fun:main
+8:fun:add
+32:fun:speak
+13:cla:Person
+19:cla:Color
+26:cla:Speaker
+38:var:x

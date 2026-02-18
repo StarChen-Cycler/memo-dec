@@ -1,0 +1,6 @@
+14:fun:greet
+39:fun:speak
+5:cla:Person
+20:cla:Point
+26:cla:Color
+33:cla:Speaker

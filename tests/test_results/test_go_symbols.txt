@@ -1,0 +1,5 @@
+7:fun:main
+12:fun:add
+28:fun:Speak
+17:cla:Person
+23:cla:Speaker

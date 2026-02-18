@@ -1,0 +1,4 @@
+8:fun:__construct
+13:fun:greet
+19:fun:say_hello
+4:cla:Person

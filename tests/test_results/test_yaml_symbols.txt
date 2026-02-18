@@ -1,0 +1,15 @@
+3:key:app
+4:key:name
+5:key:version
+6:key:database
+7:key:host
+8:key:port
+11:key:server
+12:key:host
+13:key:port
+14:key:ssl
+15:key:enabled
+16:key:cert_path
+19:key:logging
+20:key:level
+21:key:format
