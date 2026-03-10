@@ -18,85 +18,76 @@
 - Python 3.7 or higher
 - pip (Python package installer)
 
-### Global Installation (Recommended)
+---
 
-Install memo-dec globally to use the `memo-dec` command anywhere:
+### Method 1: Global Installation with pipx (Recommended)
+
+**pipx** installs Python CLI tools globally with isolated environments - works independently of conda environments.
 
 ```bash
-# Option 1: Install directly from GitHub
-pip install -e git+https://github.com/YOUR_USERNAME/memo-dec.git#egg=memo-dec
+# 1. Install pipx (if not already installed)
+pip install pipx
+pipx ensurepath
 
-# Option 2: Clone and install in editable mode (for development)
-git clone https://github.com/YOUR_USERNAME/memo-dec.git
+# 2. Clone the repository
+git clone https://github.com/StarChen-Cycler/memo-dec.git
+cd memo-dec
+
+# 3. Install globally with pipx
+pipx install .
+```
+
+After installation, `memo-dec` is available **everywhere** on your system:
+
+```bash
+# Verify
+memo-dec --help
+
+# Works from any directory
+cd /any/project
+memo-dec init
+```
+
+---
+
+### Method 2: Editable Install (For Development)
+
+Use this if you want to modify the code and have changes take effect immediately.
+
+```bash
+# Clone and install in editable mode
+git clone https://github.com/StarChen-Cycler/memo-dec.git
 cd memo-dec
 pip install -e .
 ```
 
-After installation, the `memo-dec` command will be available globally:
+**Note**: This installs to the **current Python environment only** (e.g., active conda env). To use in a different environment, reinstall or use pipx.
+
+---
+
+### Method 3: Install from GitHub URL
 
 ```bash
-# Verify installation
-memo-dec --help
-
-# Use from any directory
-cd /path/to/any/project
-memo-dec init
+# Direct install from GitHub
+pip install git+https://github.com/StarChen-Cycler/memo-dec.git
 ```
 
-### Why Editable Install (`-e`)?
+---
 
-The `-e` flag installs in "editable" or "development" mode:
-- Code changes take effect immediately without reinstalling
-- The `memo-dec` command is globally accessible
-- Dependencies are installed to your Python environment
+### Method 4: Conda Environment
 
-### Install with uv (Faster Alternative)
-
-If you have [uv](https://github.com/astral-sh/uv) installed:
+If you use conda, you can install in a specific environment:
 
 ```bash
-# Faster installation
-uv pip install -e .
+# Create a dedicated environment (optional)
+conda create -n memo-tools python=3.10
+conda activate memo-tools
 
-# Or from GitHub
-uv pip install -e git+https://github.com/YOUR_USERNAME/memo-dec.git#egg=memo-dec
+# Install
+pip install git+https://github.com/StarChen-Cycler/memo-dec.git
 ```
 
-### Install via pip (when published to PyPI)
-
-```bash
-pip install memo-dec
-```
-
-### Manual Dependency Installation
-
-If you need to install dependencies separately:
-
-```bash
-pip install tree-sitter>=0.21.0 \
-            tree-sitter-python>=0.20.0 \
-            tree-sitter-javascript>=0.20.0 \
-            tree-sitter-typescript>=0.20.0 \
-            tree-sitter-c>=0.20.0 \
-            tree-sitter-java>=0.20.0 \
-            tree-sitter-markdown>=0.3.2 \
-            tree-sitter-html>=0.19.0 \
-            tree-sitter-json>=0.20.0 \
-            tree-sitter-embedded-template>=0.20.0 \
-            tree-sitter-go>=0.20.0 \
-            tree-sitter-rust>=0.21.0 \
-            tree-sitter-ruby>=0.21.0 \
-            tree-sitter-php>=0.20.0 \
-            tree-sitter-c-sharp>=0.21.0 \
-            tree-sitter-kotlin>=1.0.0 \
-            tree-sitter-swift>=0.0.1 \
-            tree-sitter-scala>=0.23.0 \
-            tree-sitter-bash>=0.21.0 \
-            tree-sitter-yaml>=0.6.0 \
-            tree-sitter-toml>=0.6.0 \
-            tree-sitter-sql>=0.3.5 \
-            openai>=1.0.0
-```
+---
 
 ## Configuration
 
@@ -113,6 +104,8 @@ Or create a `.env` file in your project root:
 ```
 OPENAI_API_KEY=your-api-key-here
 ```
+
+---
 
 ## Usage
 
@@ -136,9 +129,9 @@ This creates a `.memo/` directory structure:
 ├── memotree/
 │   ├── memofoldertree.txt   # Folder structure only
 │   └── memofiletree.txt     # Full file tree with sizes
-├── memodocs/            # Additional documentation
-├── .memosymbols-hist/   # Symbol history (timestamped JSON)
-└── .memocontent-hist/   # Content history (timestamped JSON)
+├── memodocs/               # Additional documentation
+├── .memosymbols-hist/     # Symbol history (timestamped JSON)
+└── .memocontent-hist/     # Content history (timestamped JSON)
 ```
 
 ### Extract Symbols
@@ -157,26 +150,6 @@ memo-dec extractsymbols markdown
 memo-dec extractsymbols txt path/to/file.py
 ```
 
-### Generate Summaries
-
-```bash
-# Generate summaries for all files
-memo-dec summarizedocs
-
-# Force update all summaries
-memo-dec summarizedocs --force
-```
-
-### Generate Ignore Patterns
-
-```bash
-# Generate .memoignore for current directory
-memo-dec findignore
-
-# Generate for specific project
-memo-dec findignore path/to/project
-```
-
 ### Query Stored Symbols
 
 ```bash
@@ -186,11 +159,21 @@ memo-dec getsymbols markdown .py
 # Get JavaScript symbols in JSON
 memo-dec getsymbols json .js
 
-# Get all symbols
-memo-dec getsymbols markdown
-
 # Get symbols from specific directory
 memo-dec getsymbols txt .py src/
+
+# Get all symbols
+memo-dec getsymbols markdown
+```
+
+### Generate Summaries
+
+```bash
+# Generate summaries for all files
+memo-dec summarizedocs
+
+# Force update all summaries
+memo-dec summarizedocs --force
 ```
 
 ### Query Stored Summaries
@@ -206,10 +189,16 @@ memo-dec getsummary json .py
 memo-dec getsummary txt .js src/
 ```
 
-### Add Ignore Patterns
+### Manage Ignore Patterns
 
 ```bash
-# Add patterns to .memoignore
+# Generate .memoignore for current directory
+memo-dec findignore
+
+# Generate for specific project
+memo-dec findignore path/to/project
+
+# Add patterns manually
 memo-dec addignore "*.log" "temp/" "build/"
 
 # View all patterns
@@ -228,6 +217,8 @@ memo-dec update --content
 # Update both
 memo-dec update --all
 ```
+
+---
 
 ## Supported Languages
 
@@ -256,6 +247,8 @@ memo-dec update --all
 | Vue | `.vue` | tags, attributes |
 | Jupyter | `.ipynb` | functions, classes, variables |
 
+---
+
 ## Development
 
 ### Running Tests
@@ -281,10 +274,11 @@ memo-dec/
 │   ├── config.py           # Configuration management
 │   ├── symbol_extractor.py # Multi-language symbol extraction
 │   ├── tree_generator.py   # File tree generation
-│   ├── summarizer.py       # AI-powered summarization
-│   ├── storage.py          # Storage management
-│   ├── history.py          # History tracking
-│   └── ignore_manager.py   # Ignore pattern management
+│   ├── ai_client.py         # AI-powered summarization
+│   ├── metadata.py          # File metadata management
+│   ├── storage.py           # Storage management
+│   ├── history.py           # History tracking
+│   └── ignore_manager.py    # Ignore pattern management
 ├── tests/
 │   ├── test_*.py          # Language-specific tests
 │   └── test_results/      # Test output files
@@ -292,13 +286,7 @@ memo-dec/
 └── README.md
 ```
 
-## License
-
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+---
 
 ## Troubleshooting
 
@@ -318,6 +306,8 @@ Set your API key as described in the Configuration section. AI features will wor
 - Verify the file extension is supported
 - Check that tree-sitter language packages are installed
 - Run tests to verify installation: `python tests/test_<language>_symbols.py`
+
+---
 
 ## Examples
 
@@ -352,3 +342,13 @@ memo-dec init --context
 # 3. Extract symbols from all source files
 # 4. Generate AI summaries for each file
 ```
+
+---
+
+## License
+
+MIT License
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
