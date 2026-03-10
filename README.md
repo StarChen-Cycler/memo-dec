@@ -18,55 +18,84 @@
 - Python 3.7 or higher
 - pip (Python package installer)
 
-### Install from Source
+### Global Installation (Recommended)
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd memo-dec
-   ```
+Install memo-dec globally to use the `memo-dec` command anywhere:
 
-2. **Install in development mode**:
-   ```bash
-   pip install -e .
-   ```
+```bash
+# Option 1: Install directly from GitHub
+pip install -e git+https://github.com/YOUR_USERNAME/memo-dec.git#egg=memo-dec
 
-   Or install with all dependencies explicitly:
-   ```bash
-   pip install tree-sitter>=0.21.0 \
-               tree-sitter-python>=0.20.0 \
-               tree-sitter-javascript>=0.20.0 \
-               tree-sitter-typescript>=0.20.0 \
-               tree-sitter-c>=0.20.0 \
-               tree-sitter-java>=0.20.0 \
-               tree-sitter-markdown>=0.3.2 \
-               tree-sitter-html>=0.19.0 \
-               tree-sitter-json>=0.20.0 \
-               tree-sitter-embedded-template>=0.20.0 \
-               tree-sitter-go>=0.20.0 \
-               tree-sitter-rust>=0.21.0 \
-               tree-sitter-ruby>=0.21.0 \
-               tree-sitter-php>=0.20.0 \
-               tree-sitter-c-sharp>=0.21.0 \
-               tree-sitter-kotlin>=1.0.0 \
-               tree-sitter-swift>=0.0.1 \
-               tree-sitter-scala>=0.23.0 \
-               tree-sitter-bash>=0.21.0 \
-               tree-sitter-yaml>=0.6.0 \
-               tree-sitter-toml>=0.6.0 \
-               tree-sitter-sql>=0.3.5 \
-               openai>=1.0.0
-   ```
+# Option 2: Clone and install in editable mode (for development)
+git clone https://github.com/YOUR_USERNAME/memo-dec.git
+cd memo-dec
+pip install -e .
+```
 
-3. **Verify installation**:
-   ```bash
-   memo-dec --help
-   ```
+After installation, the `memo-dec` command will be available globally:
 
-### Install via pip (if published)
+```bash
+# Verify installation
+memo-dec --help
+
+# Use from any directory
+cd /path/to/any/project
+memo-dec init
+```
+
+### Why Editable Install (`-e`)?
+
+The `-e` flag installs in "editable" or "development" mode:
+- Code changes take effect immediately without reinstalling
+- The `memo-dec` command is globally accessible
+- Dependencies are installed to your Python environment
+
+### Install with uv (Faster Alternative)
+
+If you have [uv](https://github.com/astral-sh/uv) installed:
+
+```bash
+# Faster installation
+uv pip install -e .
+
+# Or from GitHub
+uv pip install -e git+https://github.com/YOUR_USERNAME/memo-dec.git#egg=memo-dec
+```
+
+### Install via pip (when published to PyPI)
 
 ```bash
 pip install memo-dec
+```
+
+### Manual Dependency Installation
+
+If you need to install dependencies separately:
+
+```bash
+pip install tree-sitter>=0.21.0 \
+            tree-sitter-python>=0.20.0 \
+            tree-sitter-javascript>=0.20.0 \
+            tree-sitter-typescript>=0.20.0 \
+            tree-sitter-c>=0.20.0 \
+            tree-sitter-java>=0.20.0 \
+            tree-sitter-markdown>=0.3.2 \
+            tree-sitter-html>=0.19.0 \
+            tree-sitter-json>=0.20.0 \
+            tree-sitter-embedded-template>=0.20.0 \
+            tree-sitter-go>=0.20.0 \
+            tree-sitter-rust>=0.21.0 \
+            tree-sitter-ruby>=0.21.0 \
+            tree-sitter-php>=0.20.0 \
+            tree-sitter-c-sharp>=0.21.0 \
+            tree-sitter-kotlin>=1.0.0 \
+            tree-sitter-swift>=0.0.1 \
+            tree-sitter-scala>=0.23.0 \
+            tree-sitter-bash>=0.21.0 \
+            tree-sitter-yaml>=0.6.0 \
+            tree-sitter-toml>=0.6.0 \
+            tree-sitter-sql>=0.3.5 \
+            openai>=1.0.0
 ```
 
 ## Configuration
@@ -100,14 +129,16 @@ memo-dec init --context
 This creates a `.memo/` directory structure:
 ```
 .memo/
-├── memosymbols.txt      # Extracted symbols
+├── .memoignore          # Files/folders to ignore
+├── memosymbols.txt      # Code symbols (functions, classes, variables)
+├── memocontent.json     # File summaries with hashes
+├── AI_USAGE_GUIDE.md    # Guide for AI agents
 ├── memotree/
-│   └── memofoldertree.txt  # Folder structure
-├── memodocs/
-│   ├── project_identity.md
-│   ├── repository_architecture.md
-│   └── ...
-└── .memoignore          # Ignore patterns
+│   ├── memofoldertree.txt   # Folder structure only
+│   └── memofiletree.txt     # Full file tree with sizes
+├── memodocs/            # Additional documentation
+├── .memosymbols-hist/   # Symbol history (timestamped JSON)
+└── .memocontent-hist/   # Content history (timestamped JSON)
 ```
 
 ### Extract Symbols
@@ -146,7 +177,7 @@ memo-dec findignore
 memo-dec findignore path/to/project
 ```
 
-### Get Symbols with Filters
+### Query Stored Symbols
 
 ```bash
 # Get all Python symbols in Markdown
@@ -157,6 +188,45 @@ memo-dec getsymbols json .js
 
 # Get all symbols
 memo-dec getsymbols markdown
+
+# Get symbols from specific directory
+memo-dec getsymbols txt .py src/
+```
+
+### Query Stored Summaries
+
+```bash
+# Get all summaries in Markdown
+memo-dec getsummary markdown
+
+# Get Python file summaries in JSON
+memo-dec getsummary json .py
+
+# Get summaries from specific directory
+memo-dec getsummary txt .js src/
+```
+
+### Add Ignore Patterns
+
+```bash
+# Add patterns to .memoignore
+memo-dec addignore "*.log" "temp/" "build/"
+
+# View all patterns
+cat .memo/.memoignore
+```
+
+### Update with Change Detection
+
+```bash
+# Update symbols (backup + re-extract)
+memo-dec update --symbols
+
+# Update content (incremental)
+memo-dec update --content
+
+# Update both
+memo-dec update --all
 ```
 
 ## Supported Languages
